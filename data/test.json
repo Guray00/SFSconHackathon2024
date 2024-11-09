@@ -1,0 +1,7 @@
+{"id":"107973_0",
+"supplierId":107973,
+"loadingAddress":{"city":"Lyon","country":"France","latitude":45.764,"longitude":4.8357},
+"unloadingAddress":{"city":"Zaragoza","country":"Spain","latitude":41.6488,"longitude":-0.8891},
+"goods":3,"goodsStr":"Glass",
+"price":1206.4,
+"performanceScore":2}
