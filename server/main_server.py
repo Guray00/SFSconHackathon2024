@@ -177,14 +177,8 @@ class negotiations(Resource):
             "status": "pending"
         }
 
-        #add to mongodb for debug
-        mongo = mongo_driver_negotiate()
-        negotiation_id = mongo.post_new_negotiation(data).inserted_id
-        mongo.close()
 
 
-
-        return data
         print("SBefore")
         llm_host = "http://192.168.127.161:8080/receive_params"
 
@@ -192,24 +186,26 @@ class negotiations(Resource):
 
         #send data to LLM using post request, setting header bypass-tunnel-reminder
         # also set and send a custom / non-standard browser User-Agent request header
-        headers = {
-            "bypass-tunnel-reminder": "1",
-            "User-Agent": "enrico"
-        }
         #print the response code
-
         mongo = mongo_driver_negotiate()
 
         #add status field to data
         data["status"] = "pending"
-        negotiation_id = mongo.post_new_negotiation(data).inserted_id
+        negotiation_id = mongo.post_new_negotiation(data.copy()).inserted_id
 
-        response = requests.post(llm_host, json=data, headers=headers)
+
+        print("DATA CHE STO PER INVIARE: ", data)
+        print(type(data))
+
+        response = requests.post(llm_host, json=data)
 
         #response from LLM contains the outcome of the negotiation
         response_data = response.json()
 
-        if response_data["status"] == "accepted":
+
+
+
+        if response_data["status"] == "Accepted":
             #update the negotiation status
             mongo.put_negotiation_by_id(negotiation_id, {"status": "accepted"}) 
 
@@ -301,8 +297,7 @@ class GetAveragePrice(Resource):
             return jsonify({"message": "Please provide start and end city"})
         
         #requests to GetTransportHistory
-        data = requests.get("localhost:5000/GetTransportHistory?load_city="+start_city+"&unload_city="+end_city).json()
-
+        data = GetTransportHistory().get(start_city, end_city)
         #compute the average price
         price_list = []
         for item in data:
@@ -313,13 +308,13 @@ class GetAveragePrice(Resource):
         return jsonify({"average_price": avg_price})
 
 
-    
 api.add_resource(MainServer, "/")
 api.add_resource(suppliers, "/suppliers")
 api.add_resource(negotiations, "/negotiations")
 api.add_resource(averagePrice, "/averagePrice")
 api.add_resource(confirmNegotiation, "/confirmNegotiation")
 api.add_resource(GetAvailableCities, "/GetAvailableCities")
+api.add_resource(GetAveragePrice, "/GetAveragePrice")
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=False, host="0.0.0.0", port=9000)
