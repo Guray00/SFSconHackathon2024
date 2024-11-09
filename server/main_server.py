@@ -80,6 +80,10 @@ class GetTransportHistory():
         
         data = utility.GetTransportHistoryOriginal().get_results(loading_address, unloading_address)
 
+        if not data:
+            return None
+
+
         filtered_data = []
         for i in data:
             if i["loadingAddress"]["city"] == loading_address and i["unloadingAddress"]["city"] == unloading_address:
@@ -139,6 +143,10 @@ class negotiations(Resource):
 
         data = GetTransportHistory().get(load_city, unload_city)
 
+        #if there are no results, return a string syaing that there are no results
+        if not data:
+            return jsonify({"message": "No results found for this route"})
+
 
         # group by supplier id
         map_price_list = {}
@@ -171,6 +179,11 @@ class negotiations(Resource):
 
         mapped_rank = MapToContacts().get(rank)
         
+
+
+        #sort rank by alhabetuical order
+        mapped_rank.sort(key=lambda x: x["name"])
+
         data = {
             "date": requested_date,
             "minimum_price": min_price,
@@ -180,6 +193,7 @@ class negotiations(Resource):
             "rank": mapped_rank,
             "status": "pending"
         }
+
 
 
 
@@ -201,18 +215,20 @@ class negotiations(Resource):
         print("DATA CHE STO PER INVIARE: ", data)
         print(type(data))
 
-        response = requests.post(llm_host, json=data)
+        #set timeout to 5 minutes
+        response = requests.post(llm_host, json=data, timeout=(60,120))
 
         #response from LLM contains the outcome of the negotiation
         response_data = response.json()
 
+        print("RESPONSE DATA: ", response_data)
 
 
-
-        if response_data["status"] == "Accepted":
+        if response_data["final_status"] == "success":
             #update the negotiation status
-            mongo.put_negotiation_by_id(negotiation_id, {"status": "accepted"}) 
-
+            mongo.put_negotiation_by_id(negotiation_id, {"status": "accepted", "final_price":response_data["final_price"]}) 
+        else:
+            mongo.put_negotiation_by_id(negotiation_id, {"status": "rejected"})
 
         mongo.close()
 
@@ -322,4 +338,4 @@ api.add_resource(GetAvailableCities, "/GetAvailableCities")
 api.add_resource(GetAveragePrice, "/GetAveragePrice")
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=9000)
+    app.run(debug=False, host="0.0.0.0", port=8080)

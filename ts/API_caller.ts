@@ -25,6 +25,7 @@ async function fetchDataFromEndpoint(baseUrl: string, params: Record<string, str
 
     const data = await response.json();
     console.log("Dati ricevuti:", data);
+    
   } catch (error) {
     console.error("Errore durante la richiesta:", error);
   }

@@ -38,4 +38,7 @@ class GetTransportHistoryOriginal():
     def get_results(self, city1, city2):
         query = self.endpoint + f"?city1={city1}&city2={city2}"
         response = requests.get(query)
+        #if response is empty, return None
+        if not response.text:
+            return None
         return response.json()
