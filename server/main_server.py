@@ -218,7 +218,7 @@ class negotiations(Resource):
         mongo.close()
 
         #should return price and supplier name
-        return jsonify(response_data["final_price"])
+        return {"final_price": response_data["final_price"], "supplier_name": response_data["supplier_name"]}
 
 class MapToContacts():
     def get(self, rank_list):
