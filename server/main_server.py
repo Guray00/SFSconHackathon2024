@@ -285,7 +285,32 @@ class confirmNegotiation(Resource):
         mongo.close()
 
         return jsonify({"message": "Negotiation accepted"})
+    
 
+class GetAvailableCities(Resource):
+    def get(self):
+        return utility.GetAvailableCities().get_results()
+    
+
+class GetAveragePrice(Resource):
+    def get(self):
+        start_city = request.args.get("start_city")
+        end_city = request.args.get("end_city")
+
+        if not start_city or not end_city:
+            return jsonify({"message": "Please provide start and end city"})
+        
+        #requests to GetTransportHistory
+        data = requests.get("localhost:5000/GetTransportHistory?load_city="+start_city+"&unload_city="+end_city).json()
+
+        #compute the average price
+        price_list = []
+        for item in data:
+            price_list.append(item["price"])
+
+        avg_price = py.mean(price_list)
+
+        return jsonify({"average_price": avg_price})
 
 
     
@@ -294,6 +319,7 @@ api.add_resource(suppliers, "/suppliers")
 api.add_resource(negotiations, "/negotiations")
 api.add_resource(averagePrice, "/averagePrice")
 api.add_resource(confirmNegotiation, "/confirmNegotiation")
+api.add_resource(GetAvailableCities, "/GetAvailableCities")
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
