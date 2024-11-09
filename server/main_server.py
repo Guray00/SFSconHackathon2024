@@ -92,6 +92,7 @@ class negotiations(Resource):
     
     #Work In Progress
     def post(self):
+        print("POST")
         load_city = request.args.get("load_city")
         unload_city = request.args.get("unload_city")
         
@@ -145,7 +146,20 @@ class negotiations(Resource):
             "unload_city": unload_city,
             "rank": mapped_rank
         }
+        print("SBefore")
+        llm_host = "http://192.168.127.161:8080/receive_params"
 
+        print("Sending data to LLM")
+
+        #send data to LLM using post request, setting header bypass-tunnel-reminder
+        # also set and send a custom / non-standard browser User-Agent request header
+        headers = {
+            "bypass-tunnel-reminder": "1",
+            "User-Agent": "enrico"
+        }
+        response = requests.post(llm_host, json=data, headers=headers)
+        #print the response code
+        print(response.status_code)
         return jsonify(data)
 
 class MapToContacts():
@@ -196,6 +210,11 @@ class averagePrice(Resource):
 
         
        
+class receiveFromLLM(Resource):
+    def post(self):
+        data = request.get_json()
+        
+        #should forward the data to frontend
         
 
 
