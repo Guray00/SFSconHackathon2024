@@ -96,7 +96,8 @@ class negotiations(Resource):
         load_city = request.args.get("load_city")
         unload_city = request.args.get("unload_city")
         
-        requested_price = request.args.get("price")
+        min_price = request.args.get("min_price")
+        max_price = request.args.get("max_price")
         requested_date = request.args.get("date")
        
 
@@ -141,7 +142,8 @@ class negotiations(Resource):
         
         data = {
             "date": requested_date,
-            "price": requested_price,
+            "minimum_price": min_price,
+            "maximum_price": max_price,
             "load_city": load_city,
             "unload_city": unload_city,
             "rank": mapped_rank
@@ -215,7 +217,7 @@ class receiveFromLLM(Resource):
         data = request.get_json()
         
         #should forward the data to frontend
-        
+
 
 
     
