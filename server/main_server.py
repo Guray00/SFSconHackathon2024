@@ -7,8 +7,12 @@ import utility
 from testDB import mongo_driver_negotiate
 
 
+from flask_cors import CORS, cross_origin
+
 app = Flask(__name__)
 api = Api(app)
+cors = CORS(app) # allow CORS for all domains on all routes.
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 class MainServer(Resource):
     def get(self):
@@ -284,6 +288,7 @@ class confirmNegotiation(Resource):
     
 
 class GetAvailableCities(Resource):
+    @cross_origin()
     def get(self):
         return utility.GetAvailableCities().get_results()
     
