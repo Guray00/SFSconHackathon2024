@@ -4,6 +4,8 @@ import requests
 import numpy as py
 import utility
 
+from testDB import mongo_driver_negotiate
+
 
 app = Flask(__name__)
 api = Api(app)
@@ -88,7 +90,32 @@ class GetTransportHistory():
 
 class negotiations(Resource):
     def get(self):
-        return jsonify({"message": "Hello, World!"})
+        
+        #check if there are any parameters
+        status = request.args.get("status")
+
+        mongo = mongo_driver_negotiate()
+
+        print("GET")
+
+        if status:
+            query = mongo.get_by_status(status)
+            print("Status")
+        else:
+            query = mongo.get_all_negotiations()
+
+        data = []
+        for i in query:
+            #remove the _id field
+            print(i["_id"])
+            i.pop("_id")
+            data.append(i)
+
+        mongo.close()
+        print(data)
+
+        return data
+
     
     #Work In Progress
     def post(self):
@@ -146,8 +173,18 @@ class negotiations(Resource):
             "maximum_price": max_price,
             "load_city": load_city,
             "unload_city": unload_city,
-            "rank": mapped_rank
+            "rank": mapped_rank,
+            "status": "pending"
         }
+
+        #add to mongodb for debug
+        mongo = mongo_driver_negotiate()
+        negotiation_id = mongo.post_new_negotiation(data).inserted_id
+        mongo.close()
+
+
+
+        return data
         print("SBefore")
         llm_host = "http://192.168.127.161:8080/receive_params"
 
@@ -159,10 +196,28 @@ class negotiations(Resource):
             "bypass-tunnel-reminder": "1",
             "User-Agent": "enrico"
         }
-        response = requests.post(llm_host, json=data, headers=headers)
         #print the response code
-        print(response.status_code)
-        return jsonify(data)
+
+        mongo = mongo_driver_negotiate()
+
+        #add status field to data
+        data["status"] = "pending"
+        negotiation_id = mongo.post_new_negotiation(data).inserted_id
+
+        response = requests.post(llm_host, json=data, headers=headers)
+
+        #response from LLM contains the outcome of the negotiation
+        response_data = response.json()
+
+        if response_data["status"] == "accepted":
+            #update the negotiation status
+            mongo.put_negotiation_by_id(negotiation_id, {"status": "accepted"}) 
+
+
+        mongo.close()
+
+        #should return price and supplier name
+        return jsonify(response_data)
 
 class MapToContacts():
     def get(self, rank_list):
@@ -212,11 +267,24 @@ class averagePrice(Resource):
 
         
        
-class receiveFromLLM(Resource):
+class confirmNegotiation(Resource):
     def post(self):
-        data = request.get_json()
+        #should receive negotiation id
+        negotiation_id = request.args.get("negotiation_id")
+        if not negotiation_id:
+            return jsonify({"message": "Please provide negotiation id"})
         
-        #should forward the data to frontend
+        mongo = mongo_driver_negotiate()
+        negotiation = mongo.get_negotiation_by_id(negotiation_id)
+        if not negotiation:
+            return jsonify({"message": "Negotiation not found"})
+        negotiation["status"] = "confirmed"
+        mongo.put_negotiation_by_id(negotiation_id, negotiation)
+
+
+        mongo.close()
+
+        return jsonify({"message": "Negotiation accepted"})
 
 
 
@@ -224,5 +292,8 @@ class receiveFromLLM(Resource):
 api.add_resource(MainServer, "/")
 api.add_resource(suppliers, "/suppliers")
 api.add_resource(negotiations, "/negotiations")
+api.add_resource(averagePrice, "/averagePrice")
+api.add_resource(confirmNegotiation, "/confirmNegotiation")
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

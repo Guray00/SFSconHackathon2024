@@ -1,27 +1,15 @@
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 client = MongoClient('localhost', 27017)
 
 db = client['SFSCON24']
 
 #test the connection
-print(db)
-
-#test the collection
-print(db.list_collection_names())
-
-negotiations = db['negotiations']
-
-#test the collection
-print(negotiations)
-
-#retrieve all the documents
-for doc in negotiations.find():
-    print(doc)
 
 
 #implement class as driver
-class mongo_driver():
+class mongo_driver_negotiate():
     def __init__(self):
         self.client = MongoClient('localhost', 27017)
         self.db = self.client['SFSCON24']
@@ -32,18 +20,27 @@ class mongo_driver():
 
     def post_new_negotiation(self, negotiation):
         return self.negotiations.insert_one(negotiation)
-    
+
     def get_negotiation_by_id(self, id):
-        return self.negotiations.find_one({"_id": id})
-    
+        return self.negotiations.find_one({"_id": ObjectId(id)})
+
     def put_negotiation_by_id(self, id, negotiation):
-        return self.negotiations.update_one({"_id": id}, negotiation)
-    
+        return self.negotiations.update_one({"_id": ObjectId(id)}, {"$set": negotiation})
+
     def delete_negotiation_by_id(self, id):
-        return self.negotiations.delete_one({"_id": id})
-    
+        return self.negotiations.delete_one({"_id": ObjectId(id)})
+
     def get_ranking(self, id):
-        return self.negotiations.find_one({"_id": id})["ranking"]
-    
+        return self.negotiations.find_one({"_id": ObjectId(id)})["ranking"]
+
     def get_chat(self, id):
-        return self.negotiations.find_one({"_id": id})["chat"]
+        return self.negotiations.find_one({"_id": ObjectId(id)})["chat"]
+
+    def get_by_status(self, status):
+        return self.negotiations.find({"status": status})
+
+    
+    #close the connection
+    def close(self):
+        self.client.close()
+    
