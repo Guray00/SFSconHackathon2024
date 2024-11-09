@@ -121,13 +121,17 @@ class negotiations(Resource):
 
     
     #Work In Progress
+    @cross_origin()
     def post(self):
-        load_city = request.args.get("load_city")
-        unload_city = request.args.get("unload_city")
+        # load_city = request.args.get("load_city")
+        data = request.get_json()
+
+        load_city = data.get("load_city")
+        unload_city = data.get("unload_city")
         
-        min_price = request.args.get("min_price")
-        max_price = request.args.get("max_price")
-        requested_date = request.args.get("date")
+        min_price = float(data.get("min_price"))
+        max_price = float(data.get("max_price"))
+        requested_date = data.get("date")
        
 
         if not load_city or not unload_city:
@@ -214,11 +218,12 @@ class negotiations(Resource):
             mongo.put_negotiation_by_id(negotiation_id, {"status": "accepted", "final_price":response_data["final_price"]}) 
         else:
             mongo.put_negotiation_by_id(negotiation_id, {"status": "rejected"})
+            return {"final_price": 0, "supplier_name": response_data["name"]}
 
         mongo.close()
 
         #should return price and supplier name
-        return {"final_price": response_data["final_price"], "supplier_name": response_data["supplier_name"]}
+        return {"final_price": response_data["final_price"], "supplier_name": response_data["name"]}
 
 class MapToContacts():
     def get(self, rank_list):
