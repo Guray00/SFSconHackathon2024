@@ -104,30 +104,24 @@ class negotiations(Resource):
 
         mongo = mongo_driver_negotiate()
 
-        print("GET")
-
         if status:
             query = mongo.get_by_status(status)
-            print("Status")
         else:
             query = mongo.get_all_negotiations()
 
         data = []
         for i in query:
             #remove the _id field
-            print(i["_id"])
             i.pop("_id")
             data.append(i)
 
         mongo.close()
-        print(data)
 
         return data
 
     
     #Work In Progress
     def post(self):
-        print("POST")
         load_city = request.args.get("load_city")
         unload_city = request.args.get("unload_city")
         
@@ -197,10 +191,7 @@ class negotiations(Resource):
 
 
 
-        print("SBefore")
         llm_host = "http://192.168.127.161:8080/receive_params"
-
-        print("Sending data to LLM")
 
         #send data to LLM using post request, setting header bypass-tunnel-reminder
         # also set and send a custom / non-standard browser User-Agent request header
@@ -212,17 +203,11 @@ class negotiations(Resource):
         negotiation_id = mongo.post_new_negotiation(data.copy()).inserted_id
 
 
-        print("DATA CHE STO PER INVIARE: ", data)
-        print(type(data))
-
         #set timeout to 5 minutes
-        response = requests.post(llm_host, json=data, timeout=(60,120))
+        response = requests.post(llm_host, json=data, timeout=(60,300))
 
         #response from LLM contains the outcome of the negotiation
         response_data = response.json()
-
-        print("RESPONSE DATA: ", response_data)
-
 
         if response_data["final_status"] == "success":
             #update the negotiation status
@@ -233,7 +218,7 @@ class negotiations(Resource):
         mongo.close()
 
         #should return price and supplier name
-        return jsonify(response_data)
+        return jsonify(response_data["final_price"])
 
 class MapToContacts():
     def get(self, rank_list):
